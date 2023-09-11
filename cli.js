@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env node
 
 const {Command} = require('commander')
 const todoApi =  require('./index')
