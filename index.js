@@ -1,5 +1,61 @@
 const db = require('./db')
-const inquirer = require("inquirer");
+const inquirer = require('inquirer');
+
+const inquireTitle = () => {
+  inquirer
+    .prompt({
+      type: 'input',
+      name: 'title',
+      message: '请输入任务名称',
+    })
+    .then((answers) => {
+      todoApi.add(answers.title)
+    });
+}
+
+const inquireInit = (list) => {
+  inquirer
+    .prompt({
+      type: 'list',
+      name: 'index',
+      message: '请选择你想操作的任务',
+      choices: [{name: '退出', value: -2},{name: '创建任务', value: -1},...list.map((i, index) => ({name: `[${i.done ? '√' : ''}] ${index + 1}: ${i.name}`, value: index}))]
+    })
+    .then((answers) => {
+      const { index } = answers
+      if (index >= 0) {
+        inquirer
+          .prompt({
+            type: 'list',
+            name: 'index',
+            message: '请选择你的操作',
+            choices: [{name: '退出', value: -1},{name: '完成', value: 0},{name: '未完成', value: 1},{name: '删除', value: 2},{name: '修改标题', value: 3}]
+          }).then((answer3) => {
+          const actionMap = {
+            0: () => {
+              todoApi.update({
+                index, done: true
+              })
+            },
+            1: () => {
+              todoApi.update({
+                index, done: false
+              })
+            },
+            2: () => {
+              todoApi.del(index)
+            },
+            3: () => {
+              inquireTitle()
+            },
+          }
+          actionMap[answer3.index]()
+        })
+      } else if (index === -1) {
+        inquireTitle()
+      }
+    })
+}
 
 const todoApi = {
   async add(word) {
@@ -17,7 +73,7 @@ const todoApi = {
   async update(option) {
     const {index, title, done} = option
     const list = await db.read()
-    const item = list.find((_, i) => i === index)
+    const item = list.find((_, i) => i === Number(index))
     if (item) {
       if (done !== undefined) {
         item.done = done
@@ -35,27 +91,7 @@ const todoApi = {
 
   async showAll() {
     const list = await db.read()
-
-    inquirer
-      .prompt([
-        {
-          type: 'list',
-          name: 'index',
-          message: '请选择你想操作的任务',
-          choices: ['1', ' 2', '3']
-        }
-
-      ])
-      .then((answers) => {
-        // Use user feedback for... whatever!!
-      })
-      .catch((error) => {
-        if (error.isTtyError) {
-          // Prompt couldn't be rendered in the current environment
-        } else {
-          // Something else went wrong
-        }
-      });
+    inquireInit(list)
   }
 }
 module.exports = todoApi
