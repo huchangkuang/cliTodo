@@ -2,15 +2,17 @@ const db = require('./db')
 const inquirer = require('inquirer');
 
 const inquireTitle = () => {
-  inquirer
-    .prompt({
-      type: 'input',
-      name: 'title',
-      message: '请输入任务名称',
-    })
-    .then((answers) => {
-      todoApi.add(answers.title)
-    });
+  return new Promise((resolve) => {
+    inquirer
+      .prompt({
+        type: 'input',
+        name: 'title',
+        message: '请输入任务名称',
+      })
+      .then((answers) => {
+        resolve(answers.title)
+      });
+  })
 }
 
 const inquireInit = (list) => {
@@ -21,7 +23,7 @@ const inquireInit = (list) => {
       message: '请选择你想操作的任务',
       choices: [{name: '退出', value: -2},{name: '创建任务', value: -1},...list.map((i, index) => ({name: `[${i.done ? '√' : ''}] ${index + 1}: ${i.name}`, value: index}))]
     })
-    .then((answers) => {
+    .then(async (answers) => {
       const { index } = answers
       if (index >= 0) {
         inquirer
@@ -45,14 +47,15 @@ const inquireInit = (list) => {
             2: () => {
               todoApi.del(index)
             },
-            3: () => {
-              inquireTitle()
-            },
+            3: async () => {
+              const title = await inquireTitle(list)
+              todoApi.update({index, title})             },
           }
           actionMap[answer3.index]()
         })
       } else if (index === -1) {
-        inquireTitle()
+        const title = await inquireTitle(list)
+        todoApi.add(title)
       }
     })
 }
@@ -79,7 +82,7 @@ const todoApi = {
         item.done = done
       }
       if (title !== undefined) {
-        item.title = title
+        item.name = title
       }
       await db.write(list)
     }
