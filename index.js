@@ -15,49 +15,52 @@ const inquireTitle = () => {
   })
 }
 
-const inquireInit = (list) => {
-  inquirer
-    .prompt({
-      type: 'list',
-      name: 'index',
-      message: '请选择你想操作的任务',
-      choices: [{name: '退出', value: -2},{name: '创建任务', value: -1},...list.map((i, index) => ({name: `[${i.done ? '√' : ''}] ${index + 1}: ${i.name}`, value: index}))]
+const inquireChoices = (choices, message) => {
+  return new Promise(((resolve) => {
+    inquirer
+      .prompt({
+        type: 'list',
+        name: 'index',
+        message,
+        choices: choices
+      }).then(async (answers) => {
+        resolve(answers.index)
     })
-    .then(async (answers) => {
-      const { index } = answers
-      if (index >= 0) {
-        inquirer
-          .prompt({
-            type: 'list',
-            name: 'index',
-            message: '请选择你的操作',
-            choices: [{name: '退出', value: -1},{name: '完成', value: 0},{name: '未完成', value: 1},{name: '删除', value: 2},{name: '修改标题', value: 3}]
-          }).then((answer3) => {
-          const actionMap = {
-            0: () => {
-              todoApi.update({
-                index, done: true
-              })
-            },
-            1: () => {
-              todoApi.update({
-                index, done: false
-              })
-            },
-            2: () => {
-              todoApi.del(index)
-            },
-            3: async () => {
-              const title = await inquireTitle(list)
-              todoApi.update({index, title})             },
-          }
-          actionMap[answer3.index]()
+  }))
+}
+
+const inquireInit = async (list) => {
+  const choices = [{name: '退出', value: -3},{name: '创建任务', value: -2},{name: '清空', value: -1},...list.map((i, index) => ({name: `[${i.done ? '√' : ''}] ${index + 1}: ${i.name}`, value: index}))]
+  const index = await inquireChoices(choices, '请选择你想操作的任务')
+  if (index >= 0) {
+    const choices2 = [{name: '退出', value: -1},{name: '完成', value: 0},{name: '未完成', value: 1},{name: '删除', value: 2},{name: '修改标题', value: 3}]
+    const index2 = await inquireChoices(choices2, '请选择你的操作')
+    const actionMap = {
+      0: () => {
+        todoApi.update({
+          index, done: true
         })
-      } else if (index === -1) {
+      },
+      1: () => {
+        todoApi.update({
+          index, done: false
+        })
+      },
+      2: () => {
+        todoApi.del(index)
+      },
+      3: async () => {
         const title = await inquireTitle(list)
-        todoApi.add(title)
-      }
-    })
+        todoApi.update({index, title})
+      },
+    }
+    actionMap[index2]?.()
+  } else if (index === -2) {
+    const title = await inquireTitle(list)
+    todoApi.add(title)
+  } else if (index === -1) {
+    todoApi.clear()
+  }
 }
 
 const todoApi = {
