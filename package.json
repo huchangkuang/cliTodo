@@ -1,6 +1,6 @@
 {
-  "name": "cliTodo",
-  "version": "1.0.0",
+  "name": "cli-todo-node",
+  "version": "1.0.1",
   "description": "command todo tool",
   "bin": {
     "cTodo": "cli.js"
